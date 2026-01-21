@@ -1,0 +1,1333 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI 对话系统</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Microsoft YaHei", "Segoe UI",
+          Roboto, "Helvetica Neue", Arial, sans-serif;
+        background: #f2f3f5;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+      }
+      .container {
+        width: 1100px;
+        height: 800px;
+        margin: 0 auto;
+        background: #ffffff;
+        display: flex;
+        flex-direction: row;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .header {
+        background: #12b7f5;
+        color: #ffffff;
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #0ea5e9;
+        box-shadow: 0 2px 4px rgba(18, 183, 245, 0.15);
+      }
+      .header-content h1 {
+        font-size: 17px;
+        font-weight: 600;
+        color: #ffffff;
+        margin-bottom: 2px;
+      }
+      .header .subtitle {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.85);
+        font-weight: 400;
+      }
+      .header-icon {
+        font-size: 22px;
+        color: #ffffff;
+      }
+      .chat-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .chat-area::-webkit-scrollbar {
+        width: 6px;
+      }
+      .chat-area::-webkit-scrollbar-track {
+        background: #e8e8e8;
+      }
+      .chat-area::-webkit-scrollbar-thumb {
+        background: #c0c0c0;
+        border-radius: 3px;
+      }
+      .chat-area::-webkit-scrollbar-thumb:hover {
+        background: #a0a0a0;
+      }
+      .message {
+        display: flex;
+        margin-bottom: 16px;
+        animation: slideIn 0.3s ease-out;
+      }
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .message:hover .message-bubble {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .message.ai1 {
+        flex-direction: row;
+      }
+      .message.ai2 {
+        flex-direction: row-reverse;
+      }
+      .message.user {
+        flex-direction: row;
+        justify-content: center;
+      }
+      .avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: 600;
+        color: white;
+        flex-shrink: 0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+      .message.ai1 .avatar {
+        background: #12b7f5;
+        margin-right: 10px;
+        font-size: 13px;
+      }
+      .message.ai2 .avatar {
+        background: #ff6b6b;
+        margin-left: 10px;
+        font-size: 13px;
+      }
+      .message.user .avatar {
+        background: #3b82f6;
+        margin-right: 10px;
+        font-size: 10px;
+        line-height: 1.2;
+        padding: 0 2px;
+      }
+      .message-content-wrapper {
+        max-width: 70%;
+      }
+      .message-info {
+        font-size: 11px;
+        color: #999;
+        margin-bottom: 4px;
+        font-weight: 400;
+      }
+      .message.ai1 .message-info {
+        text-align: left;
+      }
+      .message.ai2 .message-info {
+        text-align: right;
+      }
+      .message-bubble {
+        background: #ffffff;
+        padding: 10px 14px;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+        line-height: 1.6;
+        word-wrap: break-word;
+        font-size: 14px;
+        color: #333;
+        position: relative;
+      }
+      .message.ai1 .message-bubble {
+        background: #ffffff;
+        color: #333;
+        border: 1px solid #e5e5e5;
+      }
+      .message.ai2 .message-bubble {
+        background: #f0f7ff;
+        color: #333;
+        border: none;
+      }
+      .message.user .message-bubble {
+        background: #3b82f6;
+        color: #ffffff;
+        border: none;
+        font-weight: 500;
+      }
+      .system-message {
+        text-align: center;
+        padding: 6px 12px;
+        color: #999;
+        font-size: 12px;
+        margin: 8px 0;
+        background: transparent;
+        border-radius: 0;
+        display: block;
+        align-self: center;
+      }
+      .controls {
+        background: #f5f5f5;
+        border-top: 1px solid #e0e0e0;
+      }
+      .sidebar {
+        width: 320px;
+        background: #ffffff;
+        border-left: 1px solid #e0e0e0;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      .sidebar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .sidebar::-webkit-scrollbar-track {
+        background: #f0f0f0;
+      }
+      .sidebar::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+      }
+      .sidebar::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+      }
+      .sidebar-header {
+        padding: 16px 20px;
+        background: #f8f8f8;
+        border-bottom: 1px solid #e0e0e0;
+        font-size: 14px;
+        font-weight: 500;
+        color: #333;
+      }
+      .sidebar-content {
+        padding: 16px 20px;
+        flex: 1;
+        overflow-y: auto;
+      }
+      .sidebar-section {
+        margin-bottom: 24px;
+      }
+      .sidebar-section:last-child {
+        margin-bottom: 0;
+      }
+      .sidebar-section-title {
+        font-size: 12px;
+        color: #999;
+        font-weight: 500;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .sidebar-item {
+        margin-bottom: 12px;
+      }
+      .sidebar-item:last-child {
+        margin-bottom: 0;
+      }
+      .sidebar-item label {
+        font-size: 12px;
+        color: #666;
+        font-weight: 500;
+        margin-bottom: 6px;
+        display: block;
+      }
+      .sidebar-item select,
+      .sidebar-item input,
+      .sidebar-item textarea {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        font-size: 13px;
+        transition: all 0.2s ease;
+        background: #ffffff;
+        color: #333;
+      }
+      .sidebar-item select:hover,
+      .sidebar-item input:hover,
+      .sidebar-item textarea:hover {
+        border-color: #d0d0d0;
+      }
+      .sidebar-item select:focus,
+      .sidebar-item input:focus,
+      .sidebar-item textarea:focus {
+        outline: none;
+        border-color: #12b7f5;
+        background: #ffffff;
+      }
+      .sidebar-item textarea {
+        min-height: 80px;
+        max-height: 150px;
+        resize: vertical;
+        line-height: 1.5;
+      }
+      .sidebar-actions {
+        padding: 16px 20px;
+        border-top: 1px solid #e0e0e0;
+        background: #f8f8f8;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .sidebar-actions .btn {
+        width: 100%;
+      }
+      .input-area {
+        padding: 12px 20px;
+        background: #f5f5f5;
+        border-top: 1px solid #e0e0e0;
+      }
+      .input-row {
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+      }
+      .input-wrapper {
+        flex: 1;
+        position: relative;
+      }
+      .input-wrapper textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        background: #ffffff;
+        color: #333;
+        resize: none;
+        min-height: 40px;
+        max-height: 120px;
+        font-family: inherit;
+        line-height: 1.5;
+      }
+      .input-wrapper textarea:hover {
+        border-color: #d0d0d0;
+      }
+      .input-wrapper textarea:focus {
+        outline: none;
+        border-color: #12b7f5;
+        background: #ffffff;
+      }
+      .settings-panel {
+        background: #ffffff;
+        border-top: 1px solid #e0e0e0;
+        padding: 16px 20px;
+        display: none;
+      }
+      .settings-panel.show {
+        display: block;
+      }
+      .settings-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      .settings-item {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .settings-item label {
+        font-size: 12px;
+        color: #666;
+        font-weight: 500;
+      }
+      .settings-item select,
+      .settings-item input,
+      .settings-item textarea {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        font-size: 13px;
+        transition: all 0.2s ease;
+        background: #ffffff;
+        color: #333;
+      }
+      .settings-item select:hover,
+      .settings-item input:hover,
+      .settings-item textarea:hover {
+        border-color: #d0d0d0;
+      }
+      .settings-item select:focus,
+      .settings-item input:focus,
+      .settings-item textarea:focus {
+        outline: none;
+        border-color: #12b7f5;
+        background: #ffffff;
+      }
+      .settings-item textarea {
+        min-height: 60px;
+        max-height: 80px;
+        resize: vertical;
+      }
+      .settings-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        padding-top: 12px;
+        border-top: 1px solid #e5e5e5;
+      }
+      .btn {
+        padding: 8px 20px;
+        border: none;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+      .btn-primary {
+        background: #12b7f5;
+        color: white;
+      }
+      .btn-primary:hover {
+        background: #0ea5e9;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(18, 183, 245, 0.3);
+      }
+      .btn-primary:active {
+        background: #0c8ab8;
+        transform: translateY(0);
+      }
+      .btn-secondary {
+        background: #f5f5f5;
+        color: #666;
+        border: 1px solid #e0e0e0;
+      }
+      .btn-secondary:hover {
+        background: #e8e8e8;
+        border-color: #d0d0d0;
+      }
+      .btn-danger {
+        background: #ff4757;
+        color: white;
+      }
+      .btn-danger:hover {
+        background: #ff3838;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(255, 71, 87, 0.3);
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+        box-shadow: none !important;
+      }
+      .btn-icon {
+        padding: 8px 12px;
+        background: transparent;
+        border: 1px solid #e0e0e0;
+        color: #666;
+        font-size: 16px;
+      }
+      .btn-icon:hover {
+        background: #f5f5f5;
+        border-color: #d0d0d0;
+      }
+      .btn-icon.active {
+        background: #e8f4fd;
+        border-color: #12b7f5;
+        color: #12b7f5;
+      }
+      .loading {
+        text-align: center;
+        padding: 16px;
+        color: #999;
+        font-size: 13px;
+      }
+      .loading::after {
+        content: "...";
+        animation: dots 1.5s steps(4, end) infinite;
+      }
+      @keyframes dots {
+        0%,
+        20% {
+          content: ".";
+        }
+        40% {
+          content: "..";
+        }
+        60%,
+        100% {
+          content: "...";
+        }
+      }
+      .system-message {
+        text-align: center;
+        color: #999;
+        font-size: 12px;
+        margin: 16px 0;
+        padding: 8px 16px;
+        background: rgba(0, 0, 0, 0.03);
+        border-radius: 4px;
+        font-weight: 400;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="main-content">
+        <div class="header">
+          <div class="header-content">
+            <h1>聊天</h1>
+            <div class="subtitle" id="modelInfo"></div>
+          </div>
+          <div class="header-icon">💬</div>
+        </div>
+
+        <div class="chat-area" id="chatArea">
+          <div class="system-message" id="apiKeyHint" style="display: none;">请先在右侧侧边栏输入OpenRouter API Key</div>
+        </div>
+
+        <div class="controls">
+          <div class="input-area">
+            <div class="input-row">
+              <div class="input-wrapper">
+                <textarea id="userMessage" placeholder="输入消息加入对话..." rows="1"></textarea>
+              </div>
+              <button class="btn btn-primary" onclick="sendUserMessage()" id="sendUserBtn">发送</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar">
+        <div class="sidebar-header">对话设置</div>
+        <div class="sidebar-content">
+          <div class="sidebar-section">
+            <div class="sidebar-section-title">AI 模型</div>
+            <div class="sidebar-item">
+              <label>AI 1 模型</label>
+              <select id="model1"></select>
+            </div>
+            <div class="sidebar-item">
+              <label>AI 2 模型</label>
+              <select id="model2"></select>
+            </div>
+          </div>
+
+          <div class="sidebar-section">
+            <div class="sidebar-section-title">身份设定</div>
+            <div class="sidebar-item">
+              <label>AI 1 昵称</label>
+              <input type="text" id="nickname1" value="小林" />
+            </div>
+            <div class="sidebar-item">
+              <label>AI 1 身份设定</label>
+              <textarea id="prompt1">你是一个人类男性,你的身份代号是小林,你的恋人是小雨</textarea>
+            </div>
+            <div class="sidebar-item">
+              <label>AI 2 昵称</label>
+              <input type="text" id="nickname2" value="小雨" />
+            </div>
+            <div class="sidebar-item">
+              <label>AI 2 身份设定</label>
+              <textarea id="prompt2">你是一个人类女性,你的身份代号是小雨,你的恋人是小林</textarea>
+            </div>
+          </div>
+
+          <div class="sidebar-section">
+            <div class="sidebar-section-title">对话参数</div>
+            <div class="sidebar-item">
+              <label>对话主题</label>
+              <input type="text" id="topic" placeholder="输入对话主题" value="爱" />
+            </div>
+            <div class="sidebar-item">
+              <label>对话轮数</label>
+              <input type="number" id="rounds" value="50" min="1" max="200" />
+            </div>
+          </div>
+
+          <div class="sidebar-section">
+            <div class="sidebar-section-title">API设置</div>
+            <div class="sidebar-item">
+              <label>OpenRouter API Key</label>
+              <input type="password" id="apiKey" placeholder="输入您的OpenRouter API Key" />
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-actions">
+          <button class="btn btn-secondary" onclick="clearChat()" id="clearBtn">清空对话</button>
+          <button class="btn btn-primary" onclick="startChat()" id="startBtn">开始对话</button>
+          <button class="btn btn-danger" onclick="stopChat()" id="stopBtn" style="display: none;">停止对话</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let conversationHistory = [];
+      let isChatting = false;
+      let shouldContinueChat = true;
+      let availableModels = [];
+      let abortController = null;
+
+      function updateButtonStates() {
+        const startBtn = document.getElementById("startBtn");
+        const stopBtn = document.getElementById("stopBtn");
+        const clearBtn = document.getElementById("clearBtn");
+        const sendUserBtn = document.getElementById("sendUserBtn");
+
+        if (isChatting) {
+          startBtn.style.display = "none";
+          stopBtn.style.display = "inline-block";
+          clearBtn.disabled = true;
+          sendUserBtn.disabled = false;
+        } else {
+          startBtn.style.display = "inline-block";
+          stopBtn.style.display = "none";
+          clearBtn.disabled = false;
+          sendUserBtn.disabled = true;
+        }
+      }
+
+      async function loadModels() {
+        try {
+          const apiKey = document.getElementById("apiKey").value.trim();
+          const headers = {
+            "Content-Type": "application/json",
+          };
+          if (apiKey) {
+            headers["Authorization"] = `Bearer ${apiKey}`;
+          }
+          const response = await fetch("/models", { headers });
+          
+          if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+              alert("API Key无效，请检查后重新输入");
+              return;
+            }
+            throw new Error(`HTTP错误: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          if (data.models) {
+            availableModels = data.models;
+            populateModelSelects();
+          }
+        } catch (error) {
+          console.error("加载模型列表失败:", error);
+          if (error.message && error.message.includes("API Key")) {
+            alert("API Key无效，请检查后重新输入");
+          }
+        }
+      }
+
+      function populateModelSelects() {
+        const model1Select = document.getElementById("model1");
+        const model2Select = document.getElementById("model2");
+        
+        const freeModels = availableModels.filter(m => m.includes("free"));
+        
+        const modelOptions = freeModels.map(model => {
+          const displayName = model.split("/").pop().replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+          return `<option value="${model}">${displayName}</option>`;
+        }).join("");
+        
+        model1Select.innerHTML = modelOptions;
+        model2Select.innerHTML = modelOptions;
+        
+        // 查找"Mimo V2 Flash:Free"模型的索引
+        const mimoModelIndex = freeModels.findIndex(m => m.toLowerCase().includes("mimo"));
+        
+        if (mimoModelIndex !== -1) {
+          // 两个模型都默认选择Mimo V2 Flash:Free
+          model1Select.selectedIndex = mimoModelIndex;
+          model2Select.selectedIndex = mimoModelIndex;
+        } else {
+          if (model1Select.options.length > 1) {
+            model1Select.selectedIndex = 0;
+            model2Select.selectedIndex = 1;
+          }
+        }
+      }
+
+      async function sendMessage(model, messages) {
+        try {
+          // 检查是否应该继续对话
+          if (!shouldContinueChat) {
+            console.log(`[发送消息] 对话已停止，取消请求`);
+            throw new Error(`对话已停止`);
+          }
+
+          console.log(`[发送消息] 模型: ${model}`);
+          console.log(`[发送消息] 消息数: ${messages.length}`);
+          console.log(`[发送消息] 消息详情:`);
+          messages.forEach((msg, idx) => {
+            const contentPreview = msg.content.substring(0, 100) + (msg.content.length > 100 ? '...' : '');
+            console.log(`[发送消息] 消息[${idx}]: ${msg.role} - ${msg.name || ''} - ${contentPreview}`);
+          });
+
+          // 使用AbortController
+          const controller = new AbortController();
+          const signal = controller.signal;
+
+          // 保存最新的controller，用于后续可能的取消操作
+          abortController = controller;
+
+          const response = await fetch("/chat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${document.getElementById("apiKey").value.trim()}`,
+            },
+            body: JSON.stringify({
+              model: model,
+              messages: messages,
+            }),
+            signal: signal,
+          });
+
+          if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+              throw new Error("API Key无效，请检查后重新输入");
+            }
+            throw new Error(`HTTP错误: ${response.status} ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          
+          // 检查API错误
+          if (data.error) {
+            if (data.error.includes("API Key") || data.error.includes("Unauthorized") || data.error.includes("authentication")) {
+              throw new Error("API Key无效，请检查后重新输入");
+            }
+            throw new Error(`API错误: ${data.error}`);
+          }
+
+          // 检查响应格式
+          if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+            throw new Error(`API响应格式错误: 缺少choices数组`);
+          }
+
+          const choice = data.choices[0];
+          
+          // 检查choice格式
+          if (!choice) {
+            throw new Error(`API响应格式错误: choices[0]为空`);
+          }
+
+          if (!choice.message) {
+            throw new Error(`API响应格式错误: 缺少message字段`);
+          }
+
+          if (!choice.message.content) {
+            throw new Error(`API响应格式错误: 缺少content字段`);
+          }
+
+          const content = choice.message.content;
+          
+          if (typeof content !== 'string' || content.trim() === '') {
+            throw new Error(`API响应格式错误: content字段为空或不是字符串`);
+          }
+
+          console.log(`[发送消息] 成功接收到响应，内容长度: ${content.length}`);
+          return content;
+        } catch (error) {
+          console.error(`[发送消息] 错误:`, error);
+          if (error.name === 'AbortError') {
+            return `错误: 请求已取消`;
+          }
+          return `错误: ${error.message}`;
+        }
+      }
+
+      function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+
+      function addMessage(aiType, modelName, content) {
+        const chatArea = document.getElementById("chatArea");
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${aiType}`;
+
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString("zh-CN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        let avatarText = "";
+        let displayNickname = "";
+        if (aiType === "ai1") {
+          const nickname1 = document.getElementById("nickname1").value.trim() || "树猫";
+          avatarText = nickname1;
+          displayNickname = nickname1;
+        } else if (aiType === "ai2") {
+          const nickname2 = document.getElementById("nickname2").value.trim() || "流萤";
+          avatarText = nickname2;
+          displayNickname = nickname2;
+        } else {
+          avatarText = "主持人";
+          displayNickname = "主持人";
+        }
+
+        messageDiv.innerHTML = `
+          <div class="avatar">${avatarText}</div>
+          <div class="message-content-wrapper">
+            <div class="message-info">${displayNickname} ${timeStr}</div>
+            <div class="message-bubble">${content}</div>
+          </div>
+        `;
+
+        chatArea.appendChild(messageDiv);
+        chatArea.scrollTop = chatArea.scrollHeight;
+      }
+
+      function showLoading() {
+        const chatArea = document.getElementById("chatArea");
+        const loadingDiv = document.createElement("div");
+        loadingDiv.className = "loading";
+        loadingDiv.id = "loadingIndicator";
+        loadingDiv.textContent = "对方正在回复中";
+        chatArea.appendChild(loadingDiv);
+        chatArea.scrollTop = chatArea.scrollHeight;
+      }
+
+      function removeLoading() {
+        const loadingDiv = document.getElementById("loadingIndicator");
+        if (loadingDiv) {
+          loadingDiv.remove();
+        }
+      }
+
+      function getModelDisplayName(modelId) {
+        const parts = modelId.split("/");
+        const modelName = parts[parts.length - 1];
+        return modelName.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+      }
+
+      window.onload = function() {
+        loadModels();
+        
+        const userMessageInput = document.getElementById("userMessage");
+        const apiKeyInput = document.getElementById("apiKey");
+        const apiKeyHint = document.getElementById("apiKeyHint");
+        
+        // 检查API Key是否已输入
+        if (!apiKeyInput.value.trim()) {
+          apiKeyHint.style.display = "block";
+        }
+        
+        apiKeyInput.addEventListener("input", function() {
+          if (this.value.trim()) {
+            apiKeyHint.style.display = "none";
+          } else {
+            apiKeyHint.style.display = "block";
+          }
+        });
+        
+        userMessageInput.addEventListener("keydown", function(e) {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            sendUserMessage();
+          }
+        });
+
+        userMessageInput.addEventListener("input", function() {
+          this.style.height = "auto";
+          this.style.height = Math.min(this.scrollHeight, 120) + "px";
+        });
+
+        apiKeyInput.addEventListener("change", function() {
+          loadModels();
+        });
+      };
+
+      async function startChat() {
+        if (isChatting) {
+          return;
+        }
+
+        const model1 = document.getElementById("model1").value;
+        const model2 = document.getElementById("model2").value;
+        const topic = document.getElementById("topic").value;
+        const rounds = parseInt(document.getElementById("rounds").value);
+        const prompt1 = document.getElementById("prompt1").value.trim();
+        const prompt2 = document.getElementById("prompt2").value.trim();
+        const apiKey = document.getElementById("apiKey").value.trim();
+
+        if (!topic.trim()) {
+          alert("请输入对话主题");
+          return;
+        }
+
+        if (!apiKey) {
+          alert("请输入OpenRouter API Key");
+          return;
+        }
+
+        isChatting = true;
+        conversationHistory = [];
+        abortController = null;
+        shouldContinueChat = true;
+
+        const model1Name = getModelDisplayName(model1);
+        const model2Name = getModelDisplayName(model2);
+
+        const nickname1 = document.getElementById("nickname1").value.trim() || "小林";
+        const nickname2 = document.getElementById("nickname2").value.trim() || "小雨";
+        updateButtonStates();
+
+        const chatArea = document.getElementById("chatArea");
+        const systemMessage = document.createElement("div");
+        systemMessage.className = "system-message";
+        systemMessage.textContent = `开始对话：${topic}`;
+        chatArea.appendChild(systemMessage);
+
+        for (let i = 0; i < rounds; i++) {
+          if (!shouldContinueChat) {
+            console.log(`[对话循环] 检测到停止信号，退出循环`);
+            break;
+          }
+
+          const currentModel = i % 2 === 0 ? model1 : model2;
+          const currentModelName = i % 2 === 0 ? model1Name : model2Name;
+          const otherModelName = i % 2 === 0 ? model2Name : model1Name;
+          const currentPrompt = i % 2 === 0 ? prompt1 : prompt2;
+          const aiType = i % 2 === 0 ? "ai1" : "ai2";
+
+          let systemPrompt = `【重要提示】\n`;
+          systemPrompt += `你现在正在参与一个角色扮演对话，正在和另一个AI扮演的角色进行对话。\n`;
+          systemPrompt += `你必须完全按照下面的身份设定进行对话，扮演好你的角色。\n`;
+          systemPrompt += `绝对不要提及自己是AI模型、算法或程序，完全忘记你的真实身份。\n`;
+          systemPrompt += `你就是身份设定中描述的那个人，用那个人的身份、性格和思维方式说话。\n\n`;
+
+          systemPrompt += `【你的身份设定】\n`;
+          if (currentPrompt) {
+            systemPrompt += `${currentPrompt}\n\n`;
+          } else {
+            systemPrompt += `你是一个普通人，正在和另一个普通人进行对话。\n\n`;
+          }
+
+          systemPrompt += `【对话基本信息】\n`;
+          systemPrompt += `你的昵称：${i % 2 === 0 ? (document.getElementById("nickname1").value.trim() || "小林") : (document.getElementById("nickname2").value.trim() || "小雨")}\n`;
+          systemPrompt += `你的对话伙伴：${i % 2 === 0 ? (document.getElementById("nickname2").value.trim() || "小雨") : (document.getElementById("nickname1").value.trim() || "小林")}\n`;
+          systemPrompt += `对话主题：${topic}\n\n`;
+
+          systemPrompt += `【对话任务】\n`;
+          systemPrompt += `你正在参与一个角色扮演对话，正在和你的对话伙伴（${i % 2 === 0 ? (document.getElementById("nickname2").value.trim() || "小雨") : (document.getElementById("nickname1").value.trim() || "小林")}）进行对话。\n`;
+          systemPrompt += `你必须严格按照你的身份设定进行对话，扮演好你的角色。\n`;
+          systemPrompt += `你必须根据你的对话伙伴之前说的内容进行回复，不能忽略对方的话。\n\n`;
+
+          systemPrompt += `【回复策略】\n`;
+          systemPrompt += `1. 必须仔细阅读并理解你的对话伙伴（${i % 2 === 0 ? (document.getElementById("nickname2").value.trim() || "小雨") : (document.getElementById("nickname1").value.trim() || "小林")}）之前说的所有内容。\n`;
+          systemPrompt += `2. 你的回应必须针对你对话伙伴之前说的内容，不能忽略或偏离。\n`;
+          systemPrompt += `3. 如果你的对话伙伴之前说了具体内容，你必须针对那个内容进行回应，明确引用对方的观点或问题。\n`;
+          systemPrompt += `4. 如果你的对话伙伴之前没有回复任何内容或回复为空，你需要自己创造一个生活中的话题开始对话，比如聊聊天气、美食、兴趣爱好、日常生活等，不要直接重复主题"${topic}"。\n`;
+          systemPrompt += `5. 你的回应必须与你的人格设定完全一致，体现出你的性格特征和说话方式。\n`;
+          systemPrompt += `6. 对话需要自然流畅，像真人聊天一样，每次都要有新的观点或角度。\n\n`;
+
+          systemPrompt += `【格式要求】\n`;
+          systemPrompt += `1. 所有的对话内容（说的话）必须用双引号括起来，例如："你好，今天天气不错。"\n`;
+          systemPrompt += `2. 所有的表情或动作描述必须用括号括起来，例如：(微笑) (点头) (叹气) (伸懒腰) (揉眼睛)\n`;
+          systemPrompt += `3. 对话和表情/动作可以混合使用，例如："你好，今天天气不错。"(微笑)\n`;
+          systemPrompt += `4. 每次回应至少包含2-3个动作或表情，让对话更生动自然。\n`;
+          systemPrompt += `5. 不要在双引号外添加其他标点符号。\n\n`;
+
+          systemPrompt += `【严格禁止】\n`;
+          systemPrompt += `1. 绝对不要说"作为XX模型"、"我是AI"、"我没有实体"之类的话。\n`;
+          systemPrompt += `2. 绝对不要提及任何技术术语、算法、程序相关的内容。\n`;
+          systemPrompt += `3. 绝对不要重复之前说过的内容。\n`;
+          systemPrompt += `4. 绝对不要模仿对方的说话风格。\n\n`;
+
+          systemPrompt += `【回应要求】\n`;
+          systemPrompt += `1. 必须完全按照你的身份设定说话，始终保持一致的人格特征、说话风格和思维方式。\n`;
+          systemPrompt += `2. 仔细阅读并理解对方（${otherModelName}）和主持人的所有历史消息。\n`;
+          systemPrompt += `3. 基于对方上一条回复的内容进行回应，明确引用对方的观点或问题。\n`;
+          systemPrompt += `4. 对话需要自然流畅，像真人聊天一样，每次都要有新的观点或角度。\n`;
+          systemPrompt += `5. 主持人可以随时加入对话，你需要对主持人的发言做出直接回应。\n`;
+          systemPrompt += `6. 每次回应前，都要先确认你的身份设定，然后以符合该身份的方式回应。\n`;
+          systemPrompt += `7. 确保你的回应与之前的对话内容连贯，不要突然改变话题或观点。\n`;
+          systemPrompt += `8. 如果发现对话内容有重复或异常，请基于你的身份设定进行合理的回应和纠正。\n`;
+          systemPrompt += `9. 必须使用中文回复，确保所有回应都是中文。\n`;
+          systemPrompt += `10. 每次回应都要有实质性的内容，不要只是简单重复或敷衍。`;
+
+          const messagesWithSystem = [
+            { role: "system", content: systemPrompt, name: currentModelName },
+            ...conversationHistory.filter(msg => msg.role !== "system")
+          ];
+
+          console.log(`[AI ${currentModelName}] 准备发送请求`);
+          console.log(`[AI ${currentModelName}] 系统提示词:`, systemPrompt.substring(0, 200) + "...");
+          console.log(`[AI ${currentModelName}] 对话历史消息数:`, conversationHistory.length);
+          console.log(`[AI ${currentModelName}] 发送的消息总数:`, messagesWithSystem.length);
+          conversationHistory.forEach((msg, idx) => {
+            console.log(`[AI ${currentModelName}] 历史[${idx}]: ${msg.role} - ${msg.name || ''} - ${msg.content.substring(0, 50)}...`);
+          });
+
+          if (!shouldContinueChat) {
+            console.log(`[AI ${currentModelName}] 对话已被终止，跳过请求`);
+            break;
+          }
+
+          showLoading();
+
+          const response = await sendMessage(currentModel, messagesWithSystem);
+
+          removeLoading();
+
+          if (!shouldContinueChat) {
+            console.log(`[AI ${currentModelName}] 对话已被终止，跳过处理响应`);
+            break;
+          }
+
+          await sleep(2000);
+
+          if (!shouldContinueChat) {
+            console.log(`[AI ${currentModelName}] 对话已被终止，跳过添加消息`);
+            break;
+          }
+
+          conversationHistory.push({
+            role: "assistant",
+            name: currentModelName,
+            content: response,
+          });
+
+          addMessage(aiType, currentModelName, response);
+        }
+
+        if (shouldContinueChat) {
+          const endMessage = document.createElement("div");
+          endMessage.className = "system-message";
+          endMessage.textContent = "对话结束";
+          chatArea.appendChild(endMessage);
+          chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        isChatting = false;
+        shouldContinueChat = true;
+        abortController = null;
+        updateButtonStates();
+        console.log(`[对话] 对话已完全结束`);
+      }
+
+      async function sendUserMessage() {
+        const userMessage = document.getElementById("userMessage").value.trim();
+        if (!userMessage) {
+          alert("请输入消息");
+          return;
+        }
+
+        conversationHistory.push({
+          role: "user",
+          name: "主持人",
+          content: userMessage,
+        });
+
+        addMessage("user", "主持人", userMessage);
+
+        document.getElementById("userMessage").value = "";
+
+        if (!isChatting) {
+          return;
+        }
+
+        await sleep(1000);
+
+        if (!shouldContinueChat) {
+          console.log(`[主持人消息] 对话已被终止，跳过处理`);
+          return;
+        }
+
+        const model1 = document.getElementById("model1").value;
+        const model2 = document.getElementById("model2").value;
+        const topic = document.getElementById("topic").value;
+        const model1Name = getModelDisplayName(model1);
+        const model2Name = getModelDisplayName(model2);
+        const prompt1 = document.getElementById("prompt1").value.trim();
+        const prompt2 = document.getElementById("prompt2").value.trim();
+
+        let systemPrompt1 = `【重要提示】\n`;
+        systemPrompt1 += `你现在正在参与一个角色扮演对话，正在和另一个AI扮演的角色进行对话。\n`;
+        systemPrompt1 += `你必须完全按照下面的身份设定进行对话，扮演好你的角色。\n`;
+        systemPrompt1 += `绝对不要提及自己是AI模型、算法或程序，完全忘记你的真实身份。\n`;
+        systemPrompt1 += `你就是身份设定中描述的那个人，用那个人的身份、性格和思维方式说话。\n\n`;
+
+        systemPrompt1 += `【你的身份设定】\n`;
+        if (prompt1) {
+          systemPrompt1 += `${prompt1}\n\n`;
+        } else {
+          systemPrompt1 += `你是一个普通人，正在和另一个普通人进行对话。\n\n`;
+        }
+
+        systemPrompt1 += `【对话基本信息】\n`;
+        systemPrompt1 += `你的对话伙伴：${model2Name}\n`;
+        systemPrompt1 += `对话主题：${topic || '自由对话'}\n\n`;
+
+        systemPrompt1 += `【当前情况】\n`;
+        systemPrompt1 += `你正在参与一个角色扮演对话，正在和你的对话伙伴（${model2Name}）进行对话。\n`;
+        systemPrompt1 += `主持人刚刚发送了新消息，你需要回应主持人的消息，同时也要考虑你的对话伙伴之前说的内容。\n\n`;
+        systemPrompt1 += `【主持人的消息】\n${userMessage}\n\n`;
+
+        systemPrompt1 += `【回复策略】\n`;
+        systemPrompt1 += `1. 必须仔细阅读并理解你的对话伙伴（${model2Name}）之前说的所有内容。\n`;
+        systemPrompt1 += `2. 你的回应必须针对你对话伙伴之前说的内容，不能忽略或偏离。\n`;
+        systemPrompt1 += `3. 如果你的对话伙伴之前说了具体内容，你必须针对那个内容进行回应，明确引用对方的观点或问题。\n`;
+        systemPrompt1 += `4. 如果你的对话伙伴之前没有回复任何内容或回复为空，你需要自己创造一个生活中的话题开始对话，比如聊聊天气、美食、兴趣爱好、日常生活等，不要直接重复主题"${topic}"。\n`;
+        systemPrompt1 += `5. 你的回应必须与你的人格设定完全一致，体现出你的性格特征和说话方式。\n`;
+        systemPrompt1 += `6. 对话需要自然流畅，像真人聊天一样，每次都要有新的观点或角度。\n\n`;
+
+        systemPrompt1 += `【格式要求】\n`;
+        systemPrompt1 += `1. 所有的对话内容（说的话）必须用双引号括起来，例如："你好，今天天气不错。"\n`;
+        systemPrompt1 += `2. 所有的表情或动作描述必须用括号括起来，例如：(微笑) (点头) (叹气) (伸懒腰) (揉眼睛)\n`;
+        systemPrompt1 += `3. 对话和表情/动作可以混合使用，例如："你好，今天天气不错。"(微笑)\n`;
+        systemPrompt1 += `4. 每次回应至少包含2-3个动作或表情，让对话更生动自然。\n`;
+        systemPrompt1 += `5. 不要在双引号外添加其他标点符号。\n\n`;
+
+        systemPrompt1 += `【严格禁止】\n`;
+        systemPrompt1 += `1. 绝对不要说"作为XX模型"、"我是AI"、"我没有实体"之类的话。\n`;
+        systemPrompt1 += `2. 绝对不要提及任何技术术语、算法、程序相关的内容。\n`;
+        systemPrompt1 += `3. 绝对不要重复之前说过的内容。\n`;
+        systemPrompt1 += `4. 绝对不要模仿对方的说话风格。\n\n`;
+
+        systemPrompt1 += `【回应要求】\n`;
+        systemPrompt1 += `1. 必须完全按照你的身份设定说话，始终保持一致的人格特征、说话风格和思维方式。\n`;
+        systemPrompt1 += `2. 仔细阅读并理解主持人的消息和对方（${model2Name}）的所有历史消息。\n`;
+        systemPrompt1 += `3. 基于对方上一条回复的内容进行回应，明确引用主持人或对方的观点。\n`;
+        systemPrompt1 += `4. 对话需要自然流畅，像真人聊天一样，每次都要有新的观点或角度。\n`;
+        systemPrompt1 += `5. 直接回应主持人的问题或观点，不要忽略主持人的发言。\n`;
+        systemPrompt1 += `6. 每次回应前，都要先确认你的身份设定，然后以符合该身份的方式回应。\n`;
+        systemPrompt1 += `7. 确保你的回应与之前的对话内容连贯，不要突然改变话题或观点。\n`;
+        systemPrompt1 += `8. 如果发现对话内容有重复或异常，请基于你的身份设定进行合理的回应和纠正。\n`;
+        systemPrompt1 += `9. 必须使用中文回复，确保所有回应都是中文。\n`;
+        systemPrompt1 += `10. 每次回应都要有实质性的内容，不要只是简单重复或敷衍。`;
+
+        let systemPrompt2 = `【重要提示】\n`;
+        systemPrompt2 += `你现在正在参与一个角色扮演对话，正在和另一个AI扮演的角色进行对话。\n`;
+        systemPrompt2 += `你必须完全按照下面的身份设定进行对话，扮演好你的角色。\n`;
+        systemPrompt2 += `绝对不要提及自己是AI模型、算法或程序，完全忘记你的真实身份。\n`;
+        systemPrompt2 += `你就是身份设定中描述的那个人，用那个人的身份、性格和思维方式说话。\n\n`;
+
+        systemPrompt2 += `【你的身份设定】\n`;
+        if (prompt2) {
+          systemPrompt2 += `${prompt2}\n\n`;
+        } else {
+          systemPrompt2 += `你是一个普通人，正在和另一个普通人进行对话。\n\n`;
+        }
+
+        systemPrompt2 += `【对话基本信息】\n`;
+        systemPrompt2 += `你的对话伙伴：${model1Name}\n`;
+        systemPrompt2 += `对话主题：${topic || '自由对话'}\n\n`;
+
+        systemPrompt2 += `【当前情况】\n`;
+        systemPrompt2 += `你正在参与一个角色扮演对话，正在和你的对话伙伴（${model1Name}）进行对话。\n`;
+        systemPrompt2 += `主持人刚刚发送了新消息，你需要回应主持人的消息，同时也要考虑你的对话伙伴之前说的内容。\n\n`;
+        systemPrompt2 += `【主持人的消息】\n${userMessage}\n\n`;
+
+        systemPrompt2 += `【回复策略】\n`;
+        systemPrompt2 += `1. 必须仔细阅读并理解你的对话伙伴（${model1Name}）之前说的所有内容。\n`;
+        systemPrompt2 += `2. 你的回应必须针对你对话伙伴之前说的内容，不能忽略或偏离。\n`;
+        systemPrompt2 += `3. 如果你的对话伙伴之前说了具体内容，你必须针对那个内容进行回应，明确引用对方的观点或问题。\n`;
+        systemPrompt2 += `4. 如果你的对话伙伴之前没有回复任何内容或回复为空，你需要自己创造一个生活中的话题开始对话，比如聊聊天气、美食、兴趣爱好、日常生活等，不要直接重复主题"${topic}"。\n`;
+        systemPrompt2 += `5. 你的回应必须与你的人格设定完全一致，体现出你的性格特征和说话方式。\n`;
+        systemPrompt2 += `6. 对话需要自然流畅，像真人聊天一样，每次都要有新的观点或角度。\n\n`;
+
+        systemPrompt2 += `【格式要求】\n`;
+        systemPrompt2 += `1. 所有的对话内容（说的话）必须用双引号括起来，例如："你好，今天天气不错。"\n`;
+        systemPrompt2 += `2. 所有的表情或动作描述必须用括号括起来，例如：(微笑) (点头) (叹气) (伸懒腰) (揉眼睛)\n`;
+        systemPrompt2 += `3. 对话和表情/动作可以混合使用，例如："你好，今天天气不错。"(微笑)\n`;
+        systemPrompt2 += `4. 每次回应至少包含2-3个动作或表情，让对话更生动自然。\n`;
+        systemPrompt2 += `5. 不要在双引号外添加其他标点符号。\n\n`;
+
+        systemPrompt2 += `【严格禁止】\n`;
+        systemPrompt2 += `1. 绝对不要说"作为XX模型"、"我是AI"、"我没有实体"之类的话。\n`;
+        systemPrompt2 += `2. 绝对不要提及任何技术术语、算法、程序相关的内容。\n`;
+        systemPrompt2 += `3. 绝对不要重复之前说过的内容。\n`;
+        systemPrompt2 += `4. 绝对不要模仿对方的说话风格。\n\n`;
+
+        systemPrompt2 += `【回应要求】\n`;
+        systemPrompt2 += `1. 必须完全按照你的身份设定说话，始终保持一致的人格特征、说话风格和思维方式。\n`;
+        systemPrompt2 += `2. 仔细阅读并理解主持人的消息和对方（${model1Name}）的所有历史消息。\n`;
+        systemPrompt2 += `3. 基于对方上一条回复的内容进行回应，明确引用主持人或对方的观点。\n`;
+        systemPrompt2 += `4. 对话需要自然流畅，像真人聊天一样，每次都要有新的观点或角度。\n`;
+        systemPrompt2 += `5. 直接回应主持人的问题或观点，不要忽略主持人的发言。\n`;
+        systemPrompt2 += `6. 每次回应前，都要先确认你的身份设定，然后以符合该身份的方式回应。\n`;
+        systemPrompt2 += `7. 确保你的回应与之前的对话内容连贯，不要突然改变话题或观点。\n`;
+        systemPrompt2 += `8. 如果发现对话内容有重复或异常，请基于你的身份设定进行合理的回应和纠正。\n`;
+        systemPrompt2 += `9. 必须使用中文回复，确保所有回应都是中文。\n`;
+        systemPrompt2 += `10. 每次回应都要有实质性的内容，不要只是简单重复或敷衍。`;
+
+        const messagesForAI1 = [
+          { role: "system", content: systemPrompt1, name: model1Name },
+          ...conversationHistory.filter(msg => msg.role !== "system")
+        ];
+
+        const messagesForAI2 = [
+          { role: "system", content: systemPrompt2, name: model2Name },
+          ...conversationHistory.filter(msg => msg.role !== "system")
+        ];
+
+        console.log(`[主持人发送消息] ${userMessage}`);
+        console.log(`[AI ${model1Name}] 准备回应主持人的消息`);
+        console.log(`[AI ${model1Name}] 系统提示词:`, systemPrompt1.substring(0, 200) + "...");
+        console.log(`[AI ${model1Name}] 对话历史消息数:`, conversationHistory.length);
+        console.log(`[AI ${model1Name}] 发送的消息总数:`, messagesForAI1.length);
+        conversationHistory.forEach((msg, idx) => {
+          console.log(`[AI ${model1Name}] 历史[${idx}]: ${msg.role} - ${msg.name || ''} - ${msg.content.substring(0, 50)}...`);
+        });
+
+        if (!shouldContinueChat) {
+          console.log(`[AI ${model1Name}] 对话已被终止，跳过请求`);
+          return;
+        }
+
+        showLoading();
+        const response1 = await sendMessage(model1, messagesForAI1);
+        removeLoading();
+
+        if (!shouldContinueChat) {
+          console.log(`[AI ${model1Name}] 对话已被终止，跳过处理响应`);
+          return;
+        }
+
+        await sleep(2000);
+
+        if (!shouldContinueChat) {
+          console.log(`[AI ${model1Name}] 对话已被终止，跳过添加消息`);
+          return;
+        }
+
+        conversationHistory.push({
+          role: "assistant",
+          name: model1Name,
+          content: response1,
+        });
+
+        addMessage("ai1", model1Name, response1);
+
+        if (!shouldContinueChat) {
+          console.log(`[AI ${model1Name}] 对话已被终止，跳过AI2回应`);
+          return;
+        }
+
+        console.log(`[AI ${model2Name}] 准备回应主持人的消息`);
+        console.log(`[AI ${model2Name}] 系统提示词:`, systemPrompt2.substring(0, 200) + "...");
+        console.log(`[AI ${model2Name}] 对话历史消息数:`, conversationHistory.length);
+        console.log(`[AI ${model2Name}] 发送的消息总数:`, messagesForAI2.length);
+        conversationHistory.forEach((msg, idx) => {
+          console.log(`[AI ${model2Name}] 历史[${idx}]: ${msg.role} - ${msg.name || ''} - ${msg.content.substring(0, 50)}...`);
+        });
+
+        if (!shouldContinueChat) {
+          console.log(`[AI ${model2Name}] 对话已被终止，跳过请求`);
+          return;
+        }
+
+        showLoading();
+        const response2 = await sendMessage(model2, messagesForAI2);
+        removeLoading();
+
+        if (!shouldContinueChat) {
+          console.log(`[AI ${model2Name}] 对话已被终止，跳过处理响应`);
+          return;
+        }
+
+        await sleep(2000);
+
+        if (!shouldContinueChat) {
+          console.log(`[AI ${model2Name}] 对话已被终止，跳过添加消息`);
+          return;
+        }
+
+        conversationHistory.push({
+          role: "assistant",
+          name: model2Name,
+          content: response2,
+        });
+
+        addMessage("ai2", model2Name, response2);
+      }
+
+      function stopChat() {
+        console.log("[停止对话] 开始停止对话");
+        shouldContinueChat = false;
+        
+        // 取消正在进行的API请求
+        if (abortController) {
+          console.log("[停止对话] 取消正在进行的API请求");
+          abortController.abort();
+          abortController = null;
+        }
+        
+        const chatArea = document.getElementById("chatArea");
+        const stopMessage = document.createElement("div");
+        stopMessage.className = "system-message";
+        stopMessage.textContent = "对话已停止";
+        chatArea.appendChild(stopMessage);
+        chatArea.scrollTop = chatArea.scrollHeight;
+
+        // 延迟重置isChatting，确保所有正在进行的请求都能检测到停止信号
+        setTimeout(() => {
+          isChatting = false;
+          shouldContinueChat = true;
+          abortController = null;
+          updateButtonStates();
+          console.log("[停止对话] 对话已完全停止");
+        }, 1000);
+      }
+
+      function clearChat() {
+        console.log("[清空对话] 开始清空对话");
+        
+        if (isChatting) {
+          if (!confirm("对话正在进行中，确定要清空吗？这将停止当前的对话。")) {
+            return;
+          }
+          shouldContinueChat = false;
+          
+          // 取消正在进行的API请求
+          if (abortController) {
+            console.log("[清空对话] 取消正在进行的API请求");
+            abortController.abort();
+            abortController = null;
+          }
+        }
+
+        // 延迟执行清空操作，确保所有正在进行的请求都能检测到停止信号
+        setTimeout(() => {
+          const chatArea = document.getElementById("chatArea");
+          chatArea.innerHTML = '';
+          conversationHistory = [];
+          isChatting = false;
+          shouldContinueChat = true;
+          abortController = null;
+          document.getElementById("modelInfo").textContent = "";
+          updateButtonStates();
+          
+          console.log("[清空对话] 对话已清空，所有请求已终止");
+        }, 1000);
+      }
+    </script>
+  </body>
+</html>
