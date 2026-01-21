@@ -10,34 +10,62 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models"
+PROVIDER_CONFIG = {
+    "openrouter": {
+        "api_url": "https://openrouter.ai/api/v1/chat/completions",
+        "models_url": "https://openrouter.ai/api/v1/models",
+        "requires_auth": True,
+    },
+    "deepseek": {
+        "api_url": "https://api.deepseek.com/v1/chat/completions",
+        "models_url": None,
+        "requires_auth": True,
+    },
+}
 
-valid_models_cache = None
+PREDEFINED_MODELS = {
+    "deepseek": ["deepseek-chat", "deepseek-coder"],
+}
+
+valid_models_cache = {}
 
 
-def get_valid_models(api_key):
-    global valid_models_cache
-    if valid_models_cache is not None:
-        return valid_models_cache
+def get_valid_models(provider, api_key):
+    if provider in valid_models_cache:
+        return valid_models_cache[provider]
+
+    if provider in PREDEFINED_MODELS:
+        valid_models_cache[provider] = PREDEFINED_MODELS[provider]
+        return PREDEFINED_MODELS[provider]
+
+    config = PROVIDER_CONFIG.get(provider)
+    if not config or not config.get("models_url"):
+        return []
 
     try:
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
-        response = requests.get(OPENROUTER_MODELS_URL, headers=headers)
+        headers = {}
+        if config.get("requires_auth") and api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        response = requests.get(config["models_url"], headers=headers)
         response.raise_for_status()
         data = response.json()
-        valid_models_cache = {model["id"] for model in data.get("data", [])}
-        return valid_models_cache
+
+        if provider == "openrouter":
+            valid_models = {model["id"] for model in data.get("data", [])}
+            valid_models_cache[provider] = list(valid_models)
+            return list(valid_models)
+        else:
+            valid_models = [model["id"] for model in data.get("data", [])]
+            valid_models_cache[provider] = valid_models
+            return valid_models
     except Exception as e:
-        print(f"获取模型列表失败: {str(e)}")
-        return set()
+        print(f"获取{provider}模型列表失败: {str(e)}")
+        return []
 
 
-def validate_model(model_id, api_key):
-    valid_models = get_valid_models(api_key)
+def validate_model(model_id, provider, api_key):
+    valid_models = get_valid_models(provider, api_key)
     if not valid_models:
         return True
     return model_id in valid_models
@@ -51,8 +79,10 @@ def index():
 @app.route("/models", methods=["GET"])
 def models():
     try:
+        provider = request.headers.get("X-Provider", "openrouter")
         api_key = request.headers.get("Authorization", "").replace("Bearer ", "")
-        valid_models = get_valid_models(api_key)
+
+        valid_models = get_valid_models(provider, api_key)
         return jsonify({"models": sorted(valid_models)})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -63,11 +93,12 @@ def chat():
     data = request.json
     messages = data.get("messages", [])
     model = data.get("model", "openai/gpt-3.5-turbo")
+    provider = request.headers.get("X-Provider", "openrouter")
 
     auth_header = request.headers.get("Authorization", "")
     api_key = auth_header.replace("Bearer ", "")
 
-    print(f"收到请求 - 模型: {model}")
+    print(f"收到请求 - 提供方: {provider} - 模型: {model}")
     print(f"消息数量: {len(messages)}")
     print(f"对话历史:")
     for i, msg in enumerate(messages):
@@ -77,28 +108,36 @@ def chat():
         print(f"  [{i}] {role} ({name}): {content}...")
     print(f"API Key: {api_key[:20]}..." if api_key else "API Key: 未设置")
 
-    if not api_key:
-        error_msg = "未提供API Key，请在页面中设置"
+    config = PROVIDER_CONFIG.get(provider)
+    if not config:
+        error_msg = f"不支持的提供方: {provider}"
         print(f"错误: {error_msg}")
         return jsonify({"error": error_msg}), 400
 
-    if not validate_model(model, api_key):
+    if config.get("requires_auth") and not api_key:
+        error_msg = f"{provider}需要API Key，请在页面中设置"
+        print(f"错误: {error_msg}")
+        return jsonify({"error": error_msg}), 400
+
+    if not validate_model(model, provider, api_key):
         error_msg = f"无效的模型ID: {model}"
         print(f"错误: {error_msg}")
         return jsonify({"error": error_msg}), 400
 
     headers = {
-        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:5000",
-        "X-Title": "AI Chat",
     }
 
+    if config.get("requires_auth") and api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    api_url = config["api_url"]
     payload = {"model": model, "messages": messages}
 
     try:
-        print(f"正在向 OpenRouter 发送请求...")
-        response = requests.post(OPENROUTER_API_URL, headers=headers, json=payload)
+        print(f"正在向 {provider} 发送请求...")
+        print(f"API URL: {api_url}")
+        response = requests.post(api_url, headers=headers, json=payload)
         print(f"响应状态码: {response.status_code}")
 
         if response.status_code != 200:
@@ -106,6 +145,7 @@ def chat():
 
         response.raise_for_status()
         result = response.json()
+
         print(f"请求成功")
         return jsonify(result)
     except Exception as e:

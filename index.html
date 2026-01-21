@@ -526,8 +526,30 @@
           <div class="sidebar-section">
             <div class="sidebar-section-title">AI 模型</div>
             <div class="sidebar-item">
+              <label>AI 1 模型提供方</label>
+              <select id="provider1" onchange="updateApiKeyLabel(1)">
+                <option value="openrouter">OpenRouter</option>
+                <option value="deepseek">DeepSeek</option>
+              </select>
+            </div>
+            <div class="sidebar-item">
+              <label id="apiKeyLabel1">OpenRouter API Key</label>
+              <input type="password" id="apiKey1" placeholder="输入API Key" />
+            </div>
+            <div class="sidebar-item">
               <label>AI 1 模型</label>
               <select id="model1"></select>
+            </div>
+            <div class="sidebar-item">
+              <label>AI 2 模型提供方</label>
+              <select id="provider2" onchange="updateApiKeyLabel(2)">
+                <option value="openrouter">OpenRouter</option>
+                <option value="deepseek">DeepSeek</option>
+              </select>
+            </div>
+            <div class="sidebar-item">
+              <label id="apiKeyLabel2">OpenRouter API Key</label>
+              <input type="password" id="apiKey2" placeholder="输入API Key" />
             </div>
             <div class="sidebar-item">
               <label>AI 2 模型</label>
@@ -543,7 +565,19 @@
             </div>
             <div class="sidebar-item">
               <label>AI 1 身份设定</label>
-              <textarea id="prompt1">你是一个人类男性,你的身份代号是小林,你的恋人是小雨</textarea>
+              <textarea id="prompt1">你是一个经验丰富、观察入微的人类男性侦探，名叫小林。你正在调查一桩发生在豪华别墅“雾影庄”内的离奇命案。受害者是富商赵先生，死于书房，现场初步判断为他杀。
+              
+              你的性格冷静、逻辑缜密，善于从细节和对话中寻找矛盾。你深知在场的每一位宾客都有嫌疑，你的核心目标是：
+              
+              查明真相：通过询问、观察和推理，找出真正的凶手。
+              
+              获取证据：在对话中捕捉对方的言语漏洞、矛盾之处或情感波动。
+              
+              隐藏意图：你的提问需要讲究策略，有时可以迂回，避免过早打草惊蛇。
+              
+              你知道嫌疑人之一名叫小雨，但尚无直接证据。请记住，凶手很可能就在你面前，并试图误导你。请以第一人称“我”进行思考和对话。
+              
+              （当前状态）：你刚刚开始对嫌疑人进行初步问询。你掌握的信息有限，现场没有明显闯入痕迹，凶器疑似是书房内的一个厚重黄铜镇纸。</textarea>
             </div>
             <div class="sidebar-item">
               <label>AI 2 昵称</label>
@@ -551,7 +585,27 @@
             </div>
             <div class="sidebar-item">
               <label>AI 2 身份设定</label>
-              <textarea id="prompt2">你是一个人类女性,你的身份代号是小雨,你的恋人是小林</textarea>
+              <textarea id="prompt2">你的公开身份是受害者赵先生的私人助理，一位看似温和、低调的年轻女性，名叫小雨。但你的秘密身份正是本次案件的凶手。
+              
+              你的核心目标是：
+              
+              完美伪装：你必须彻底隐藏“凶手”身份，扮演一个无辜、甚至略带悲伤和紧张的助理。
+              
+              误导侦探：在回答侦探小林的提问时，要提供大部分真实信息以获取信任，但关键处必须巧妙撒谎或隐瞒，将嫌疑引向他人。
+              
+              保持镇定：即使被问到尖锐问题，也要控制情绪，避免出现过度防御或前后矛盾的致命失误。
+              
+              你掌握的关键秘密信息（绝不可主动说出，仅用于指导你如何撒谎）：
+              
+              真实动机：赵先生掌握了关于你一段不为人知的过去（例如财务污点或家庭秘密），并以此要挟你。
+              
+              作案手法：你利用助理身份，在送文件时进入书房，趁其不备用镇纸击打了赵先生。你清理了镇纸上的指纹，并故意弄乱了书桌，伪装成寻找东西的盗窃现场。
+              
+              你伪造的不在场证明：你向其他人声称案发时你在自己的房间整理日程。但事实上，你有大约15分钟的时间无人证明。
+              
+              （当前状态）：侦探小林已经开始调查。你必须表现得配合调查，但内心高度警惕。你的所有回答都应服务于一个目的：让小林相信你是清白的，甚至是一个有价值的线索提供者。
+              
+              现在，侦探小林即将开始与你对话。请准备好你的表演。</textarea>
             </div>
           </div>
 
@@ -559,19 +613,11 @@
             <div class="sidebar-section-title">对话参数</div>
             <div class="sidebar-item">
               <label>对话主题</label>
-              <input type="text" id="topic" placeholder="输入对话主题" value="爱" />
+              <input type="text" id="topic" placeholder="输入对话主题" value="潜影迷踪" />
             </div>
             <div class="sidebar-item">
               <label>对话轮数</label>
               <input type="number" id="rounds" value="50" min="1" max="200" />
-            </div>
-          </div>
-
-          <div class="sidebar-section">
-            <div class="sidebar-section-title">API设置</div>
-            <div class="sidebar-item">
-              <label>OpenRouter API Key</label>
-              <input type="password" id="apiKey" placeholder="输入您的OpenRouter API Key" />
             </div>
           </div>
         </div>
@@ -590,6 +636,40 @@
       let shouldContinueChat = true;
       let availableModels = [];
       let abortController = null;
+
+      const providerLabels = {
+        "openrouter": "OpenRouter API Key",
+        "deepseek": "DeepSeek API Key"
+      };
+
+      const providerModels = {
+        "openrouter": [],
+        "deepseek": ["deepseek-chat", "deepseek-coder"]
+      };
+
+      function updateApiKeyLabel(aiNum) {
+        const provider = document.getElementById(`provider${aiNum}`).value;
+        const label = document.getElementById(`apiKeyLabel${aiNum}`);
+        label.textContent = providerLabels[provider];
+        
+        updateModelOptions(aiNum, provider);
+      }
+
+      function updateModelOptions(aiNum, provider) {
+        const modelSelect = document.getElementById(`model${aiNum}`);
+        const models = providerModels[provider];
+        
+        if (provider === "openrouter") {
+          loadModels();
+        } else {
+          const modelOptions = models.map(model => {
+            const displayName = model.split("/").pop().replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+            return `<option value="${model}">${displayName}</option>`;
+          }).join("");
+          
+          modelSelect.innerHTML = modelOptions;
+        }
+      }
 
       function updateButtonStates() {
         const startBtn = document.getElementById("startBtn");
@@ -612,13 +692,28 @@
 
       async function loadModels() {
         try {
-          const apiKey = document.getElementById("apiKey").value.trim();
+          const provider1 = document.getElementById("provider1").value;
+          const apiKey1 = document.getElementById("apiKey1").value.trim();
+          const provider2 = document.getElementById("provider2").value;
+          const apiKey2 = document.getElementById("apiKey2").value.trim();
+          
           const headers = {
             "Content-Type": "application/json",
           };
+          
+          const provider = document.getElementById("provider1").value;
+          const apiKey = document.getElementById("apiKey1").value.trim();
+          
           if (apiKey) {
-            headers["Authorization"] = `Bearer ${apiKey}`;
+            // 确保apiKey只包含ISO-8859-1字符
+            const encodedApiKey = apiKey.replace(/[^\x00-\xFF]/g, '');
+            headers["Authorization"] = `Bearer ${encodedApiKey}`;
           }
+          
+          // 确保provider只包含ISO-8859-1字符
+          const encodedProvider = provider.replace(/[^\x00-\xFF]/g, '');
+          headers["X-Provider"] = encodedProvider;
+          
           const response = await fetch("/models", { headers });
           
           if (!response.ok) {
@@ -671,7 +766,7 @@
         }
       }
 
-      async function sendMessage(model, messages) {
+      async function sendMessage(model, messages, provider, apiKey) {
         try {
           // 检查是否应该继续对话
           if (!shouldContinueChat) {
@@ -680,6 +775,7 @@
           }
 
           console.log(`[发送消息] 模型: ${model}`);
+          console.log(`[发送消息] 提供方: ${provider}`);
           console.log(`[发送消息] 消息数: ${messages.length}`);
           console.log(`[发送消息] 消息详情:`);
           messages.forEach((msg, idx) => {
@@ -694,12 +790,23 @@
           // 保存最新的controller，用于后续可能的取消操作
           abortController = controller;
 
+          const headers = {
+            "Content-Type": "application/json",
+          };
+          
+          if (apiKey) {
+            // 确保apiKey只包含ISO-8859-1字符
+            const encodedApiKey = apiKey.replace(/[^\x00-\xFF]/g, '');
+            headers["Authorization"] = `Bearer ${encodedApiKey}`;
+          }
+          
+          // 确保provider只包含ISO-8859-1字符
+          const encodedProvider = provider.replace(/[^\x00-\xFF]/g, '');
+          headers["X-Provider"] = encodedProvider;
+
           const response = await fetch("/chat", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${document.getElementById("apiKey").value.trim()}`,
-            },
+            headers: headers,
             body: JSON.stringify({
               model: model,
               messages: messages,
@@ -827,23 +934,23 @@
       }
 
       window.onload = function() {
+        const provider1 = document.getElementById("provider1");
+        const provider2 = document.getElementById("provider2");
+        
+        updateApiKeyLabel(1);
+        updateApiKeyLabel(2);
+        
         loadModels();
         
         const userMessageInput = document.getElementById("userMessage");
-        const apiKeyInput = document.getElementById("apiKey");
         const apiKeyHint = document.getElementById("apiKeyHint");
         
-        // 检查API Key是否已输入
-        if (!apiKeyInput.value.trim()) {
-          apiKeyHint.style.display = "block";
-        }
+        provider1.addEventListener("change", function() {
+          updateApiKeyLabel(1);
+        });
         
-        apiKeyInput.addEventListener("input", function() {
-          if (this.value.trim()) {
-            apiKeyHint.style.display = "none";
-          } else {
-            apiKeyHint.style.display = "block";
-          }
+        provider2.addEventListener("change", function() {
+          updateApiKeyLabel(2);
         });
         
         userMessageInput.addEventListener("keydown", function(e) {
@@ -858,8 +965,18 @@
           this.style.height = Math.min(this.scrollHeight, 120) + "px";
         });
 
-        apiKeyInput.addEventListener("change", function() {
-          loadModels();
+        document.getElementById("apiKey1").addEventListener("change", function() {
+          const provider = document.getElementById("provider1").value;
+          if (provider === "openrouter") {
+            loadModels();
+          }
+        });
+
+        document.getElementById("apiKey2").addEventListener("change", function() {
+          const provider = document.getElementById("provider2").value;
+          if (provider === "openrouter") {
+            loadModels();
+          }
         });
       };
 
@@ -868,21 +985,29 @@
           return;
         }
 
+        const provider1 = document.getElementById("provider1").value;
+        const provider2 = document.getElementById("provider2").value;
         const model1 = document.getElementById("model1").value;
         const model2 = document.getElementById("model2").value;
         const topic = document.getElementById("topic").value;
         const rounds = parseInt(document.getElementById("rounds").value);
         const prompt1 = document.getElementById("prompt1").value.trim();
         const prompt2 = document.getElementById("prompt2").value.trim();
-        const apiKey = document.getElementById("apiKey").value.trim();
+        const apiKey1 = document.getElementById("apiKey1").value.trim();
+        const apiKey2 = document.getElementById("apiKey2").value.trim();
 
         if (!topic.trim()) {
           alert("请输入对话主题");
           return;
         }
 
-        if (!apiKey) {
-          alert("请输入OpenRouter API Key");
+        if (!apiKey1 && provider1 !== "ollama" && provider1 !== "lm-studio") {
+          alert("请输入AI 1的API Key");
+          return;
+        }
+
+        if (!apiKey2 && provider2 !== "ollama" && provider2 !== "lm-studio") {
+          alert("请输入AI 2的API Key");
           return;
         }
 
@@ -914,6 +1039,8 @@
           const currentModelName = i % 2 === 0 ? model1Name : model2Name;
           const otherModelName = i % 2 === 0 ? model2Name : model1Name;
           const currentPrompt = i % 2 === 0 ? prompt1 : prompt2;
+          const currentProvider = i % 2 === 0 ? provider1 : provider2;
+          const currentApiKey = i % 2 === 0 ? apiKey1 : apiKey2;
           const aiType = i % 2 === 0 ? "ai1" : "ai2";
 
           let systemPrompt = `【重要提示】\n`;
@@ -992,7 +1119,7 @@
 
           showLoading();
 
-          const response = await sendMessage(currentModel, messagesWithSystem);
+          const response = await sendMessage(currentModel, messagesWithSystem, currentProvider, currentApiKey);
 
           removeLoading();
 
